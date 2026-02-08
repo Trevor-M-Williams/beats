@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { Grid } from "@/types";
+import type { Grid, TrackId } from "@/types";
 
 import { STEPS } from "./constants";
 
@@ -291,6 +291,41 @@ export function useDrumAudio({ grid, tempo }: UseDrumAudioOptions) {
     openHatRef.current = { source: noise, gain };
   };
 
+  const triggerTrack = async (trackId: TrackId) => {
+    await ensureAudio();
+    const context = audioContextRef.current;
+    if (!context) return;
+    const time = context.currentTime + 0.01;
+    switch (trackId) {
+      case "kick":
+        playKick(time);
+        break;
+      case "snare":
+        playSnare(time);
+        break;
+      case "clap":
+        playClap(time);
+        break;
+      case "tom":
+        playTom(time);
+        break;
+      case "rim":
+        playRim(time);
+        break;
+      case "perc":
+        playPerc(time);
+        break;
+      case "hatClosed":
+        playClosedHat(time);
+        break;
+      case "hatOpen":
+        playOpenHat(time);
+        break;
+      default:
+        break;
+    }
+  };
+
   const scheduleStep = (step: number, time: number) => {
     const pattern = gridRef.current;
     if (pattern[0]?.[step]) playKick(time);
@@ -345,5 +380,6 @@ export function useDrumAudio({ grid, tempo }: UseDrumAudioOptions) {
     isPlaying,
     start,
     stop,
+    triggerTrack,
   };
 }

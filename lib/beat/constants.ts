@@ -13,3 +13,14 @@ export const TRACKS: Track[] = [
 
 export const STEPS = 16;
 export const DEFAULT_TEMPO = 120;
+
+export const KEY_BINDINGS: { trackId: Track["id"]; key: string }[] = [
+  { trackId: "kick", key: "a" },
+  { trackId: "snare", key: "s" },
+  { trackId: "clap", key: "d" },
+  { trackId: "tom", key: "f" },
+  { trackId: "rim", key: "g" },
+  { trackId: "perc", key: "h" },
+  { trackId: "hatClosed", key: "j" },
+  { trackId: "hatOpen", key: "k" },
+];

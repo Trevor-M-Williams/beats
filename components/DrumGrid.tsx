@@ -6,6 +6,7 @@ type DrumGridProps = {
   currentStep: number;
   grid: Grid;
   isPlaying: boolean;
+  keyLabels: Record<string, string>;
   tracks: Track[];
   onToggleStep: (trackIndex: number, stepIndex: number) => void;
   stepLabels: string[];
@@ -15,6 +16,7 @@ export function DrumGrid({
   currentStep,
   grid,
   isPlaying,
+  keyLabels,
   tracks,
   onToggleStep,
   stepLabels,
@@ -35,8 +37,13 @@ export function DrumGrid({
           key={track.id}
           className="grid grid-cols-[100px_repeat(16,minmax(0,1fr))] gap-2"
         >
-          <div className="flex items-center text-sm font-semibold text-zinc-200">
-            {track.label}
+          <div className="flex items-center justify-between text-sm font-semibold text-zinc-200 pr-6">
+            <span>{track.label}</span>
+            {keyLabels[track.id] ? (
+              <span className="rounded-md size-6 text-xs flex items-center justify-center text-zinc-400 outline outline-zinc-600">
+                {keyLabels[track.id]}
+              </span>
+            ) : null}
           </div>
           {grid[trackIndex].map((active, stepIndex) => {
             const isActiveStep = stepIndex === currentStep && isPlaying;

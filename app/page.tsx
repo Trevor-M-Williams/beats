@@ -1,10 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { DrumGrid } from "@/components/DrumGrid";
 import { useDrumAudio } from "@/lib/beat/audio";
-import { DEFAULT_TEMPO, STEPS, TRACKS } from "@/lib/beat/constants";
+import {
+  DEFAULT_TEMPO,
+  KEY_BINDINGS,
+  STEPS,
+  TRACKS,
+} from "@/lib/beat/constants";
 import { createEmptyGrid, PRESETS } from "@/lib/beat/presets";
 import type { Grid } from "@/types";
 
@@ -12,10 +17,34 @@ export default function Home() {
   const [grid, setGrid] = useState<Grid>(createEmptyGrid);
   const [tempo, setTempo] = useState(DEFAULT_TEMPO);
 
-  const { currentStep, isPlaying, start, stop } = useDrumAudio({
+  const { currentStep, isPlaying, start, stop, triggerTrack } = useDrumAudio({
     grid,
     tempo,
   });
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      const binding = KEY_BINDINGS.find((item) => item.key === key);
+      if (!binding) return;
+      event.preventDefault();
+      void triggerTrack(binding.trackId);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [triggerTrack]);
 
   const toggleStep = (trackIndex: number, stepIndex: number) => {
     setGrid((prev) =>
@@ -43,17 +72,22 @@ export default function Home() {
     () => Array.from({ length: STEPS }, (_, index) => (index + 1).toString()),
     [],
   );
+  const keyLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        KEY_BINDINGS.map((binding) => [
+          binding.trackId,
+          binding.key.toUpperCase(),
+        ]),
+      ),
+    [],
+  );
 
   return (
     <div className="min-h-screen bg-[#0b0b0f] text-zinc-100">
       <header className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 pb-6 pt-10">
         <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-zinc-400">
-            Beat Lab
-          </p>
-          <h1 className="text-3xl font-semibold text-white">
-            Quick Start Drum Grid
-          </h1>
+          <h1 className="text-3xl font-semibold text-white">Beat Lab</h1>
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <button
@@ -104,6 +138,7 @@ export default function Home() {
             currentStep={currentStep}
             grid={grid}
             isPlaying={isPlaying}
+            keyLabels={keyLabels}
             onToggleStep={toggleStep}
             stepLabels={stepLabels}
             tracks={TRACKS}
