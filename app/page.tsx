@@ -12,6 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useDrumAudio } from "@/lib/beat/audio";
 import {
   DEFAULT_TEMPO,
@@ -118,7 +124,6 @@ export default function Home() {
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [renameDraft, setRenameDraft] = useState("");
-  const [menuPatternId, setMenuPatternId] = useState<string | null>(null);
   const [dialogPatternId, setDialogPatternId] = useState<string | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -404,7 +409,7 @@ export default function Home() {
                   className="group relative"
                 >
                   <button
-                    className={`flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition ${
+                    className={`flex max-w-[180px] items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition ${
                       isActive
                         ? "border-white bg-white/10 text-white"
                         : "border-zinc-800 bg-[#0b0b0f] text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -418,78 +423,60 @@ export default function Home() {
                     }}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={() => handleChainDrop(pattern.id)}
-                    onClick={() => {
-                      setActivePatternId(pattern.id);
-                      setMenuPatternId(null);
-                    }}
+                    onClick={() => setActivePatternId(pattern.id)}
                     type="button"
                   >
-                    <span>{pattern.name}</span>
-                    <button
-                      className={`ml-1 flex h-6 w-6 items-center justify-center rounded-full border transition ${
-                        menuPatternId === pattern.id
-                          ? "border-white text-white opacity-100"
-                          : "border-transparent text-zinc-500 opacity-0 group-hover:opacity-100 group-hover:border-zinc-600 group-hover:text-zinc-200"
-                      }`}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setMenuPatternId((prev) =>
-                          prev === pattern.id ? null : pattern.id,
-                        );
-                      }}
-                      type="button"
-                    >
-                      <MoreVertical className="h-3.5 w-3.5" />
-                    </button>
+                    <span className="max-w-[110px] overflow-x-auto whitespace-nowrap">
+                      {pattern.name}
+                    </span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="ml-1 flex h-6 w-6 items-center justify-center rounded-full border border-transparent text-zinc-500 opacity-0 transition group-hover:opacity-100 group-hover:border-zinc-600 group-hover:text-zinc-200"
+                          onClick={(event) => event.stopPropagation()}
+                          type="button"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-40 rounded-2xl border-zinc-800 bg-[#0f1117] p-2 text-xs text-zinc-200 shadow-[0_0_30px_rgba(0,0,0,0.35)]"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <DropdownMenuItem
+                          className="rounded-xl px-3 py-2 text-zinc-200 hover:bg-white/5"
+                          onSelect={() => duplicatePattern(pattern.id)}
+                        >
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="rounded-xl px-3 py-2 text-zinc-200 hover:bg-white/5"
+                          onSelect={() => openRenameDialog(pattern.id)}
+                        >
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="rounded-xl px-3 py-2 text-red-300 hover:bg-red-500/10"
+                          onSelect={() => openDeleteDialog(pattern.id)}
+                          disabled={patterns.length <= 1}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </button>
-                  {menuPatternId === pattern.id ? (
-                    <div className="absolute right-0 top-full z-10 mt-2 w-40 rounded-2xl border border-zinc-800 bg-[#0f1117] p-2 text-xs shadow-[0_0_30px_rgba(0,0,0,0.35)]">
-                      <button
-                        className="w-full rounded-xl px-3 py-2 text-left text-zinc-200 transition hover:bg-white/5"
-                        onClick={() => {
-                          setMenuPatternId(null);
-                          createNewPattern();
-                        }}
-                        type="button"
-                      >
-                        New Pattern
-                      </button>
-                      <button
-                        className="w-full rounded-xl px-3 py-2 text-left text-zinc-200 transition hover:bg-white/5"
-                        onClick={() => {
-                          setMenuPatternId(null);
-                          duplicatePattern(pattern.id);
-                        }}
-                        type="button"
-                      >
-                        Duplicate
-                      </button>
-                      <button
-                        className="w-full rounded-xl px-3 py-2 text-left text-zinc-200 transition hover:bg-white/5"
-                        onClick={() => {
-                          setMenuPatternId(null);
-                          openRenameDialog(pattern.id);
-                        }}
-                        type="button"
-                      >
-                        Rename
-                      </button>
-                      <button
-                        className="w-full rounded-xl px-3 py-2 text-left text-red-300 transition hover:bg-red-500/10"
-                        onClick={() => {
-                          setMenuPatternId(null);
-                          openDeleteDialog(pattern.id);
-                        }}
-                        type="button"
-                        disabled={patterns.length <= 1}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-2xl border border-zinc-700 text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              onClick={createNewPattern}
+              type="button"
+              aria-label="New pattern"
+            >
+              <span className="text-lg leading-none">+</span>
+            </button>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-4">
