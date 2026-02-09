@@ -21,3 +21,18 @@ export type Preset = {
   tempo: number;
   grid: Grid;
 };
+
+export type Pattern = {
+  id: string;
+  name: string;
+  grid: Grid;
+  lengthSteps: number;
+};
+
+export type Project = {
+  patterns: Pattern[];
+  activePatternId: string;
+  chain: string[];
+  chainEnabled: boolean;
+  tempo: number;
+};

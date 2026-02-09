@@ -2,16 +2,27 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { Grid, TrackId } from "@/types";
+import type { Pattern, TrackId } from "@/types";
 
 import { STEPS } from "./constants";
 
 type UseDrumAudioOptions = {
-  grid: Grid;
+  patterns: Pattern[];
+  activePatternId: string;
+  chain: string[];
+  chainEnabled: boolean;
   tempo: number;
+  onPatternChange?: (patternId: string) => void;
 };
 
-export function useDrumAudio({ grid, tempo }: UseDrumAudioOptions) {
+export function useDrumAudio({
+  patterns,
+  activePatternId,
+  chain,
+  chainEnabled,
+  tempo,
+  onPatternChange,
+}: UseDrumAudioOptions) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -25,12 +36,44 @@ export function useDrumAudio({ grid, tempo }: UseDrumAudioOptions) {
     gain: GainNode;
   } | null>(null);
 
-  const gridRef = useRef<Grid>(grid);
+  const patternsRef = useRef<Pattern[]>(patterns);
+  const activePatternIdRef = useRef(activePatternId);
+  const chainRef = useRef<string[]>(chain);
+  const chainEnabledRef = useRef(chainEnabled);
+  const onPatternChangeRef = useRef(onPatternChange);
+  const playPatternIdRef = useRef(activePatternId);
   const tempoRef = useRef(tempo);
 
   useEffect(() => {
-    gridRef.current = grid;
-  }, [grid]);
+    patternsRef.current = patterns;
+  }, [patterns]);
+
+  useEffect(() => {
+    activePatternIdRef.current = activePatternId;
+    if (!chainEnabledRef.current || chainRef.current.length === 0) {
+      playPatternIdRef.current = activePatternId;
+      return;
+    }
+
+    if (chainRef.current.includes(activePatternId)) {
+      playPatternIdRef.current = activePatternId;
+    }
+  }, [activePatternId]);
+
+  useEffect(() => {
+    chainRef.current = chain;
+  }, [chain]);
+
+  useEffect(() => {
+    chainEnabledRef.current = chainEnabled;
+    if (!chainEnabled && activePatternIdRef.current) {
+      playPatternIdRef.current = activePatternIdRef.current;
+    }
+  }, [chainEnabled]);
+
+  useEffect(() => {
+    onPatternChangeRef.current = onPatternChange;
+  }, [onPatternChange]);
 
   useEffect(() => {
     tempoRef.current = tempo;
@@ -327,7 +370,11 @@ export function useDrumAudio({ grid, tempo }: UseDrumAudioOptions) {
   };
 
   const scheduleStep = (step: number, time: number) => {
-    const pattern = gridRef.current;
+    const currentId = playPatternIdRef.current;
+    const pattern =
+      patternsRef.current.find((item) => item.id === currentId)?.grid ??
+      patternsRef.current[0]?.grid;
+    if (!pattern) return;
     if (pattern[0]?.[step]) playKick(time);
     if (pattern[1]?.[step]) playSnare(time);
     if (pattern[2]?.[step]) playClap(time);
@@ -343,6 +390,19 @@ export function useDrumAudio({ grid, tempo }: UseDrumAudioOptions) {
     nextNoteTimeRef.current += 0.25 * secondsPerBeat;
     currentStepRef.current = (currentStepRef.current + 1) % STEPS;
     setCurrentStep(currentStepRef.current);
+
+    if (currentStepRef.current !== 0) return;
+    if (!chainEnabledRef.current || chainRef.current.length === 0) return;
+
+    const order = chainRef.current;
+    const currentId = playPatternIdRef.current;
+    const currentIndex = order.indexOf(currentId);
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % order.length;
+    const nextId = order[nextIndex];
+    playPatternIdRef.current = nextId;
+    if (activePatternIdRef.current !== nextId) {
+      onPatternChangeRef.current?.(nextId);
+    }
   };
 
   const scheduler = () => {
@@ -357,6 +417,18 @@ export function useDrumAudio({ grid, tempo }: UseDrumAudioOptions) {
   const start = async () => {
     await ensureAudio();
     if (!audioContextRef.current) return;
+    const chainIds = chainRef.current;
+    if (chainEnabledRef.current && chainIds.length > 0) {
+      const startId = chainIds.includes(activePatternIdRef.current)
+        ? activePatternIdRef.current
+        : chainIds[0];
+      playPatternIdRef.current = startId;
+      if (startId !== activePatternIdRef.current) {
+        onPatternChangeRef.current?.(startId);
+      }
+    } else {
+      playPatternIdRef.current = activePatternIdRef.current;
+    }
     nextNoteTimeRef.current = audioContextRef.current.currentTime + 0.05;
     currentStepRef.current = 0;
     setCurrentStep(0);

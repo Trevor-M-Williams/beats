@@ -8,4 +8,4 @@ script = ""
 [[actions]]
 name = "Run"
 icon = "run"
-command = "pnpm i && pnpm dev"
+command = "pnpm dev"
